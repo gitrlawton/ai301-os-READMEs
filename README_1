@@ -21,19 +21,25 @@ Through this contribution, I hope to practice the mechanics of a real OSS workfl
 
 ### Problem Description
 
-[In your own words, what's broken or missing?]
+In `src/deliver/send_proxy.cr`, two collection-emptiness checks use `.size > 0` instead of Crystal's idiomatic `.empty?` method. This is inconsistent with how the rest of the codebase handles the same pattern.
 
 ### Expected Behavior
 
-[What should happen?]
+Both checks should use Crystal's idiomatic style, matching the convention used throughout the rest of the codebase:
+
+- Line 16: `unless endpoint.params.empty?`
+- Line 19: `if !endpoint_hash["json"].empty?`
 
 ### Current Behavior
 
-[What actually happens?]
+The file currently uses non-idiomatic checks:
+
+- Line 16: `if endpoint.params.size > 0`
+- Line 19: `body = if endpoint_hash["json"].size > 0`
 
 ### Affected Components
 
-[Which parts of the codebase are involved?]
+- `src/deliver/send_proxy.cr` — lines 16 and 19 only. No other files are involved.
 
 ---
 
@@ -41,19 +47,30 @@ Through this contribution, I hope to practice the mechanics of a real OSS workfl
 
 ### Environment Setup
 
-[Notes on setting up your local development environment - challenges you faced, how you solved them]
+This is a code style/consistency issue, not a runtime bug. No local build or execution environment is needed to reproduce it. The inconsistency is visible directly by reading the source file and comparing it to the rest of the codebase.
+
+If a full local environment is needed for future work, the CONTRIBUTING.md describes the setup:
+
+```bash
+git clone https://github.com/<YOU>/noir
+cd noir
+shards install
+shards build
+```
 
 ### Steps to Reproduce
 
-1. [Step 1]
-2. [Step 2]
-3. [Observed result]
+Reproduction steps are not applicable for this issue. There is no incorrect runtime behavior to trigger. The problem is purely a code style inconsistency that can be confirmed by reading the file directly:
+
+1. Open `src/deliver/send_proxy.cr`.
+2. Observe `.size > 0` at lines 16 and 19.
+3. Compare against any other file in `src/` (e.g., `src/output_builder/curl.cr`, `src/optimizer/optimizer.cr`) — all use `.empty?` or `unless .empty?` instead.
 
 ### Reproduction Evidence
 
-- **Commit showing reproduction:** [Link to commit in your fork]
-- **Screenshots/logs:** [If applicable]
-- **My findings:** [What you discovered during reproduction]
+- **Commit showing reproduction:** Not applicable — this is a style inconsistency visible in the existing source, not a bug introduced by a specific commit. The lines in question can be viewed directly in the main branch at `src/deliver/send_proxy.cr:16` and `src/deliver/send_proxy.cr:19`.
+- **Screenshots/logs:** Not applicable.
+- **My findings:** A codebase-wide search confirms `.empty?` and `unless .empty?` are the dominant patterns (used in 30+ files). The two lines in `send_proxy.cr` are the only remaining uses of `.size > 0` for collection-emptiness checks.
 
 ---
 
@@ -61,30 +78,46 @@ Through this contribution, I hope to practice the mechanics of a real OSS workfl
 
 ### Analysis
 
-[Your analysis of the root cause - what's causing the issue?]
+The root cause is simply that these two lines were written using a more verbose, non-idiomatic style. Crystal (like Ruby) provides `.empty?` as a built-in method on collections, which is both more readable and the established convention across this codebase.
+
+There is no functional bug. The behavior of `.size > 0` and `!.empty?` is equivalent, but the inconsistency reduces readability for contributors familiar with Crystal idioms.
 
 ### Proposed Solution
 
-[High-level description of your fix approach]
+Replace the two `.size > 0` checks in `send_proxy.cr` with their idiomatic equivalents. The correct form depends on context:
+
+- Line 16 is a standalone `if` block with no `else`, so `unless endpoint.params.empty?` reads most naturally.
+- Line 19 is an `if/else` expression used as an assignment. Using `unless ... else` in this form is considered bad style in Crystal because it inverts the logic twice, so `if !endpoint_hash["json"].empty?` is the correct choice here.
 
 ### Implementation Plan
 
 Using UMPIRE framework (adapted):
 
-**Understand:** [Restate the problem]
+**Understand:** Two lines in `src/deliver/send_proxy.cr` check collection size with `.size > 0` instead of the idiomatic `.empty?` pattern used everywhere else in the codebase, which the issue asks to be changed.
 
-**Match:** [What similar patterns/solutions exist in the codebase?]
+**Match:** The codebase uses two equivalent patterns depending on context:
 
-**Plan:** [Step-by-step implementation plan]
-1. [Modify file X to do Y]
-2. [Add function Z]
-3. [Update tests]
+- `unless x.empty?` — for standalone conditionals with no `else` branch (dominant form in output builders, optimizer, engines)
+- `if !x.empty?` — for inline/compound conditions or `if/else` expressions (used in cli_validation, detector, optimizer)
 
-**Implement:** [Link to your branch/commits as you work]
+**Plan:**
 
-**Review:** [Self-review checklist - does it follow the project's contribution guidelines?]
+1. Edit `src/deliver/send_proxy.cr` line 16: replace `if endpoint.params.size > 0` with `unless endpoint.params.empty?`
+2. Edit `src/deliver/send_proxy.cr` line 19: replace `if endpoint_hash["json"].size > 0` with `if !endpoint_hash["json"].empty?`
+3. Confirm no other `.size > 0` style checks remain in the file.
+4. Run the formatter and linter to confirm the changes are clean: `crystal tool format` and `lib/ameba/bin/ameba.cr --fix` (or `just fix`).
+5. Run the test suite to confirm no regressions: `crystal spec`.
 
-**Evaluate:** [How will you verify it works?]
+**Implement:** [Link to branch will be added once the fork and branch are created]
+
+**Review:**
+
+- [ ] Change is limited to the two lines described — no unrelated edits
+- [ ] Follows CONTRIBUTING.md workflow: forked repo, changes on a feature branch, PR targets main
+- [ ] PR description clearly explains what was changed and why
+- [ ] Formatter and linter pass with no errors
+
+**Evaluate:** Since this is a style-only change with no behavioral difference, the primary verification is that `crystal spec` passes without failures, and that `crystal tool format` + Ameba report no issues. A quick manual read of the modified file confirms the logic is preserved.
 
 ---
 

@@ -125,36 +125,41 @@ Using UMPIRE framework (adapted):
 
 ### Unit Tests
 
-- [ ] Test case 1: [Description]
-- [ ] Test case 2: [Description]
-- [ ] Test case 3: [Description]
+- [x] Test case 1: `SendWithProxy` routes a GET request (no params) through the configured proxy — exercises the `unless endpoint.params.empty?` branch taking the `else` path
+- [x] Test case 2: `SendWithProxy` routes a POST with a form body through the proxy — exercises the `unless endpoint.params.empty?` branch taking the `unless` path, and `!endpoint_hash["json"].empty?` taking the `else` (form) path
+- [x] Test case 3: `SendWithProxy` swallows proxy connection errors so the batch finishes — confirms the surrounding error-handling logic is unaffected by the style change
+
+All three cases are covered by the existing spec at `spec/unit_test/deliver/send_proxy_spec.cr`. No new tests were added because the change is purely cosmetic — the behavior of `unless x.empty?` and `if !x.empty?` is identical to `.size > 0`, so the existing suite is sufficient to confirm no regression.
 
 ### Integration Tests
 
-- [ ] Integration scenario 1
-- [ ] Integration scenario 2
+- [x] Integration scenario 1: Functional test suite (`crystal spec`) run in full — confirms no other part of the codebase is broken by the change to `send_proxy.cr`
+
+No deliver-specific integration tests exist beyond the unit spec above. The change is isolated to two comparison expressions, so a full spec run is the appropriate integration check.
 
 ### Manual Testing
 
-[What you tested manually and results]
+Not applicable for this change. Because `.size > 0` and `!.empty?` / `unless .empty?` are semantically identical on Crystal collections, there is no observable behavioral difference to verify manually. Correctness is fully covered by the existing unit tests.
 
 ---
 
 ## Implementation Notes
 
-### Week [X] Progress
+The fix replaces two non-idiomatic collection-emptiness checks in `src/deliver/send_proxy.cr` with the Crystal-standard `.empty?` pattern. The change is two lines, no logic is altered.
 
-[What you built this week, challenges faced, decisions made]
+**What I built:** A style-only correction. No new methods, classes, or test cases were added.
 
-### Week [Y] Progress
-
-[Continue documenting as you work]
+**Challenges faced:** None. The fix was straightforward once the correct form for each line was determined (see reasoning below under Approach decisions).
 
 ### Code Changes
 
-- **Files modified:** [List]
-- **Key commits:** [Links to important commits]
-- **Approach decisions:** [Why you chose certain approaches]
+- **Files modified:** `src/deliver/send_proxy.cr`
+- **Key commits:** [Links will be added after pushing to fork]
+- **Approach decisions:**
+  - **Line 16** — `if endpoint.params.size > 0` → `unless endpoint.params.empty?`
+    The original `if` block has an `else` branch, but it controls the entire body of the spawned fiber, so reading it as "unless params are empty, do the parameterized request" is natural and matches the dominant form used in output builders and engines throughout the codebase.
+  - **Line 19** — `body = if endpoint_hash["json"].size > 0` → `body = if !endpoint_hash["json"].empty?`
+    This is an inline `if/else` expression used on the right-hand side of an assignment. Using `unless ... else` in this form is considered poor style in Crystal (the logic inverts twice and reads confusingly), so `!.empty?` is the correct choice here, consistent with how compound/inline conditions are written elsewhere in the codebase (e.g., `cli_validation.cr`, `detector.cr`).
 
 ---
 

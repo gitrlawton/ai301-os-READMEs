@@ -3,7 +3,7 @@
 **Contribution Number:** 1 
 **Student:** Ryan Lawton
 **Issue:** https://github.com/owasp-noir/noir/issues/1089
-**Status:** Phase 1
+**Status:** Phase 4
 
 ---
 
@@ -181,7 +181,7 @@ Fixes #1089
 
 **Maintainer Feedback:**
 
-None given, PR accepted.
+- 6/14/2024: Thanks for the contribution, @gitrlawton! The move to .empty? is correct. I pushed a follow-up commit switching the unless...else guard to if !endpoint.params.empty? to pass ameba's Style/UnlessElse lint rule and keep consistency with the json-body check below. Kept you as co-author. (The red typos check is unrelated, a pre-existing false positive on a Swift fixture)
 
 **Status:** Approved and merged
 

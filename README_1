@@ -165,15 +165,25 @@ The fix replaces two non-idiomatic collection-emptiness checks in `src/deliver/s
 
 ## Pull Request
 
-**PR Link:** [GitHub PR URL when submitted]
+**PR Link:** https://github.com/owasp-noir/noir/pull/2101
 
-**PR Description:** [Draft or final PR description - much of the content above can be adapted]
+**PR Description:**
+
+```
+Replaces `.size > 0` with `.empty?` in `src/deliver/send_proxy.cr` to match
+the idiomatic Crystal style used consistently throughout the rest of the codebase.
+
+- `endpoint.params.size > 0` → `unless endpoint.params.empty?`
+- `endpoint_hash["json"].size > 0` → `!endpoint_hash["json"].empty?`
+
+Fixes #1089
+```
 
 **Maintainer Feedback:**
-- [Date]: [Summary of feedback received]
-- [Date]: [How you addressed it]
 
-**Status:** [Awaiting review / Iterating / Approved / Merged]
+None given, PR accepted.
+
+**Status:** Approved and merged
 
 ---
 
@@ -181,20 +191,15 @@ The fix replaces two non-idiomatic collection-emptiness checks in `src/deliver/s
 
 ### Technical Skills Gained
 
-[What you learned technically]
+Before this issue, I had never worked with Crystal or contributed to an open-source project written in it. Through this issue I learned that Crystal has idiomatic patterns similar to Ruby — like preferring `.empty?` over `.size > 0` — and that following those conventions matters for consistency and readability in a project with many contributors.
 
 ### Challenges Overcome
 
-[What was hard and how you solved it]
-
-### What I'd Do Differently Next Time
-
-[Reflection on your process]
+No major challenges, but I had to think carefully about which `.empty?` form to use on each line, since the two lines had different contexts (a standalone conditional vs. an inline if/else expression).
 
 ---
 
 ## Resources Used
 
-- [Link to helpful documentation]
-- [Tutorial or Stack Overflow post that helped]
-- [GitHub issues or discussions that helped]
+- [OWASP Noir CONTRIBUTING.md](https://github.com/owasp-noir/noir/blob/main/CONTRIBUTING.md)
+- [Issue #1089](https://github.com/owasp-noir/noir/issues/1089)

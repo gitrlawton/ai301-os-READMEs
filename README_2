@@ -9,7 +9,7 @@
 
 ## Why I Chose This Issue
 
-[1-2 paragraphs explaining why this issue interests you, how it matches your skills/learning goals, what you hope to learn]
+I chose this issue because it is a natural next step from my first contribution — slightly more involved since it requires reading a large, unfamiliar file and making judgment calls about each rescue block's context — while still being approachable given my existing experience with adding debug logging in my own projects. Through this fix I hope to learn how Crystal structures exception handling and get hands-on exposure to how Noir integrates with LLM providers.
 
 ---
 

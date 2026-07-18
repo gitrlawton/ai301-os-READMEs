@@ -17,19 +17,24 @@ I chose this issue because it is a natural next step from my first contribution 
 
 ### Problem Description
 
-[In your own words, what's broken or missing?]
+In `src/analyzer/analyzers/llm_analyzers/unified_ai.cr`, five `rescue` blocks catch exceptions but don't capture the exception variable or log anything, so when something goes wrong during LLM analysis the failure is completely invisible. There's no way to tell from the output whether the analyzer silently skipped a result due to an error or simply found nothing.
 
 ### Expected Behavior
 
-[What should happen?]
+Each bare `rescue` block should capture the exception and emit a debug log message, so that running Noir with debug output enabled gives a developer a clear signal when and why a parsing step failed.
 
 ### Current Behavior
 
-[What actually happens?]
+All five rescue blocks silently swallow the exception and return a fallback value (either `nil`, an empty array, or a default), with no log output at any level.
 
 ### Affected Components
 
-[Which parts of the codebase are involved?]
+- `src/analyzer/analyzers/llm_analyzers/unified_ai.cr` — five bare rescue blocks:
+  - Line 413: `parse_agent_action` — JSON parsing of the LLM's agent action response
+  - Line 766: `build_path_info` — extracting file path and line number from a JSON endpoint
+  - Line 800: `safe_json_string` — type-coercing a JSON value to String
+  - Line 808: `safe_json_int` — type-coercing a JSON value to Int32
+  - Line 816: `safe_json_int_or_nil` — type-coercing a JSON value to Int32?
 
 ---
 
@@ -37,19 +42,22 @@ I chose this issue because it is a natural next step from my first contribution 
 
 ### Environment Setup
 
-[Notes on setting up your local development environment - challenges you faced, how you solved them]
+No local build or execution environment is needed to confirm this issue. The bare rescue blocks are visible directly by reading the source file. A full local setup (Crystal + `shards install`) would be needed to run the test suite after fixing.
 
 ### Steps to Reproduce
 
-1. [Step 1]
-2. [Step 2]
-3. [Observed result]
+Reproduction steps are not applicable in the traditional sense — there is no incorrect output to trigger. The problem is the _absence_ of output. To confirm it:
+
+1. Open `src/analyzer/analyzers/llm_analyzers/unified_ai.cr`.
+2. Search for `rescue` with no variable name (e.g. bare `rescue` not followed by `e :` or `ex :`).
+3. Observe that lines 413, 766, 800, 808, and 816 match — each returns a fallback with no logging.
+4. Compare against any other rescue block in the same file (e.g. line 232, 781) — all others capture the exception and call `logger.debug`.
 
 ### Reproduction Evidence
 
-- **Commit showing reproduction:** [Link to commit in your fork]
-- **Screenshots/logs:** [If applicable]
-- **My findings:** [What you discovered during reproduction]
+- **Commit showing reproduction:** Not applicable — the issue is visible in the existing source on main, not introduced by a specific commit.
+- **Screenshots/logs:** Not applicable.
+- **My findings:** Five bare rescue blocks confirmed at lines 413, 766, 800, 808, and 816. All other rescue blocks in the file use `rescue e : Exception` or `rescue ex : Exception` with a `logger.debug` call.
 
 ---
 

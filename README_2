@@ -65,30 +65,48 @@ Reproduction steps are not applicable in the traditional sense — there is no i
 
 ### Analysis
 
-[Your analysis of the root cause - what's causing the issue?]
+The bare rescue blocks were written without capturing the exception variable, so there is nothing to log and no message is emitted. The fix is straightforward: add `e` to each rescue clause to capture the exception, then add a `logger.debug` call with a meaningful message and `#{e.message}` interpolated in. The root cause is simply that these blocks were written defensively (to return safe fallbacks) without considering debuggability.
 
 ### Proposed Solution
 
-[High-level description of your fix approach]
+For each of the five bare rescue blocks, change `rescue` to `rescue e : Exception` and add a `logger.debug` line beneath it describing what failed. The message format should match the existing pattern used throughout the file: `"Error <doing what>: #{e.message}"`.
+
+The three `safe_json_*` helpers (lines 800, 808, 816) are low-level type-coercion utilities that can be called frequently, so their log messages should be brief and specific about which type cast failed.
 
 ### Implementation Plan
 
 Using UMPIRE framework (adapted):
 
-**Understand:** [Restate the problem]
+**Understand:** Five bare `rescue` blocks in `unified_ai.cr` silently discard exceptions during LLM response parsing, giving developers no diagnostic information when the AI analyzer fails to produce results.
 
-**Match:** [What similar patterns/solutions exist in the codebase?]
+**Match:** Every other rescue block in the same file uses `rescue e : Exception` followed by `logger.debug "Error <description>: #{e.message}"`. For example:
 
-**Plan:** [Step-by-step implementation plan]
-1. [Modify file X to do Y]
-2. [Add function Z]
-3. [Update tests]
+- Line 232: `rescue e : Exception` → `logger.debug "Error parsing filter response: #{e.message}"`
+- Line 781: `rescue ex : Exception` → `logger.debug "Error parsing params from LLM response: #{ex.message}"`
 
-**Implement:** [Link to your branch/commits as you work]
+I will follow the same pattern, using `e` as the variable name to stay consistent with the majority of blocks in the file.
 
-**Review:** [Self-review checklist - does it follow the project's contribution guidelines?]
+**Plan:**
 
-**Evaluate:** [How will you verify it works?]
+1. Line 413 (`parse_agent_action`): Change `rescue` → `rescue e : Exception`, add `logger.debug "Failed to parse agent action from LLM response: #{e.message}"`
+2. Line 766 (`build_path_info`): Change `rescue` → `rescue e : Exception`, add `logger.debug "Failed to build path info from LLM response: #{e.message}"`
+3. Line 800 (`safe_json_string`): Change `rescue` → `rescue e : Exception`, add `logger.debug "Failed to cast JSON value to String: #{e.message}"`
+4. Line 808 (`safe_json_int`): Change `rescue` → `rescue e : Exception`, add `logger.debug "Failed to cast JSON value to Int32: #{e.message}"`
+5. Line 816 (`safe_json_int_or_nil`): Change `rescue` → `rescue e : Exception`, add `logger.debug "Failed to cast JSON value to Int32: #{e.message}"`
+6. Run `crystal tool format` and `lib/ameba/bin/ameba.cr --fix` (or `just fix`) to confirm no formatting issues.
+7. Run `crystal spec` to confirm no regressions.
+
+**Implement:** [Link to branch/commits will be added after pushing to fork]
+
+**Review:**
+
+- [ ] All five bare rescue blocks addressed — none missed
+- [ ] Log messages follow the existing `"Error/Failed <description>: #{e.message}"` pattern
+- [ ] Uses `logger.debug` (not `@logger.debug`) to match the file's convention
+- [ ] Formatter and linter pass with no errors
+- [ ] Follows CONTRIBUTING.md workflow: feature branch from fork, PR targeting main
+
+**Evaluate:** Since this is a logging-only addition with no behavioral change, `crystal spec` passing is the primary verification.
 
 ---
 

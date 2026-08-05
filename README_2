@@ -114,36 +114,35 @@ I will follow the same pattern, using `e` as the variable name to stay consisten
 
 ### Unit Tests
 
-- [ ] Test case 1: [Description]
-- [ ] Test case 2: [Description]
-- [ ] Test case 3: [Description]
+- [x] Test case 1 _(pre-existing)_: `parse_agent_action` parses a valid JSON action payload — exercises the happy path through the now-logged rescue block in `agentic_spec.cr`
+- [ ] Test case 2 _(not yet written)_: `parse_agent_action` receives malformed JSON — verifies the rescue block fires and returns `nil` without raising
+
+No existing specs cover `build_path_info`, `safe_json_string`, `safe_json_int`, or `safe_json_int_or_nil` directly. Their rescue paths are exercised indirectly whenever the agentic or general LLM specs trigger endpoint parsing with unexpected JSON shapes.
 
 ### Integration Tests
 
-- [ ] Integration scenario 1
-- [ ] Integration scenario 2
+- [x] Integration scenario 1 _(pre-existing)_: Full `crystal spec` run — confirms no regressions introduced by the logging additions across the whole suite
 
 ### Manual Testing
 
-[What you tested manually and results]
+Not applicable for this change. The new `logger.debug` lines only produce output when an exception is raised inside those methods, which requires a running Noir instance with a deliberately malformed LLM response and `--debug` enabled. Since this is a logging-only addition with no behavioral change, the spec suite is the primary verification.
 
 ---
 
 ## Implementation Notes
 
-### Week [X] Progress
-
-[What you built this week, challenges faced, decisions made]
-
-### Week [Y] Progress
-
-[Continue documenting as you work]
+Added `rescue e : Exception` and a `logger.debug` call to all five bare rescue blocks in `unified_ai.cr`, replacing silent fallbacks with diagnostic output that appears under `--debug`. No logic was changed — return values are identical to before.
 
 ### Code Changes
 
-- **Files modified:** [List]
-- **Key commits:** [Links to important commits]
-- **Approach decisions:** [Why you chose certain approaches]
+- **Files modified:** `src/analyzer/analyzers/llm_analyzers/unified_ai.cr`
+- **Key commits:** [Will be added manually after pushing to fork]
+- **Approach decisions:**
+  - **Used `e : Exception`** rather than bare `rescue` to capture the exception object, matching the pattern used by every other rescue block in the file.
+  - **Used `e` not `ex`** as the variable name — both appear in the file, but `e` is the shorter, more common convention in Crystal and is used in several existing blocks in this file.
+  - **Used `logger.debug`** (not `@logger.debug`) — the file accesses the logger via a method, not an instance variable directly. Using `@logger` would be inconsistent with the rest of the file.
+  - **Kept log messages brief for `safe_json_*` helpers** — these three methods (lines 800, 808, 816) are low-level type-coercion utilities called frequently during endpoint parsing. Their messages describe the specific type cast that failed rather than referencing the LLM response broadly, to keep noise low if they fire repeatedly.
+  - **Did not change return values** — all five rescue blocks still return the same fallback (`nil`, a default `PathInfo`, or a default primitive). The fix is purely additive.
 
 ---
 

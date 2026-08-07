@@ -148,15 +148,30 @@ Added `rescue e : Exception` and a `logger.debug` call to all five bare rescue b
 
 ## Pull Request
 
-**PR Link:** [GitHub PR URL when submitted]
+**PR Link:** https://github.com/owasp-noir/noir/pull/2135
 
-**PR Description:** [Draft or final PR description - much of the content above can be adapted]
+**PR Description:**
+
+```
+Adds `rescue e : Exception` and a `logger.debug` call to five bare rescue
+blocks in `src/analyzer/analyzers/llm_analyzers/unified_ai.cr` that were
+previously swallowing exceptions silently. Failures during LLM response
+parsing will now emit a debug message when running with `--debug` enabled.
+
+- `parse_agent_action`: logs failed JSON parsing of agent action response
+- `build_path_info`: logs failed path/line extraction from endpoint JSON
+- `safe_json_string`: logs failed String type cast
+- `safe_json_int`: logs failed Int32 type cast
+- `safe_json_int_or_nil`: logs failed Int32 type cast
+
+Fixes #1101
+```
 
 **Maintainer Feedback:**
-- [Date]: [Summary of feedback received]
-- [Date]: [How you addressed it]
 
-**Status:** [Awaiting review / Iterating / Approved / Merged]
+- "LGTM! @gitrlawton thanks for contributing! Nice work :)"
+
+**Status:** Reviewed and accepted
 
 ---
 
@@ -164,20 +179,22 @@ Added `rescue e : Exception` and a `logger.debug` call to all five bare rescue b
 
 ### Technical Skills Gained
 
-[What you learned technically]
+This issue taught me how Crystal structures exception handling — specifically the difference between a bare `rescue` (which catches everything silently) and `rescue e : Exception` (which captures the exception object so you can inspect and log it). I also learned that `rescue` can be written inline at the end of a method body without a `begin` block, which is a Crystal/Ruby convention I hadn't seen before.
+
+On the project side, I got hands-on experience reading a large, unfamiliar file (~820 lines) and identifying a pattern across multiple methods, rather than just fixing a single line like in my first issue. I also got a clearer picture of how Noir integrates with LLM providers — the `unified_ai.cr` file handles everything from agent step loops to JSON response parsing, and seeing how it's structured helped me understand where LLM-based analysis fits into the broader tool.
 
 ### Challenges Overcome
 
-[What was hard and how you solved it]
+The main challenge was understanding which rescue blocks genuinely needed logging versus which ones were intentionally silent defensive wrappers. The `safe_json_*` helpers in particular felt like borderline cases — they're designed to return safe defaults on failure, and logging every type cast mismatch could get noisy. I resolved this by keeping their log messages specific (naming the exact type cast that failed) rather than referencing the LLM response broadly, so they're informative if they fire but not misleading about the cause. I also had to pay attention to whether the file used `logger` or `@logger` — the issue description used `@logger` as an example, but the file consistently uses the bare `logger` method, and matching the file's convention took priority.
 
 ### What I'd Do Differently Next Time
 
-[Reflection on your process]
+I'd look for existing specs covering the affected methods earlier in my process, before writing the implementation plan. I found the `agentic_spec.cr` test for `parse_agent_action` only after making the changes, when I was writing up the testing strategy. Checking the spec directory first would have helped me plan whether to write new tests as part of the fix. For a slightly more complex issue like this one, knowing the test coverage upfront would have informed my approach decisions.
 
 ---
 
 ## Resources Used
 
-- [Link to helpful documentation]
-- [Tutorial or Stack Overflow post that helped]
-- [GitHub issues or discussions that helped]
+- [OWASP Noir CONTRIBUTING.md](https://github.com/owasp-noir/noir/blob/main/CONTRIBUTING.md)
+- [Issue #1101](https://github.com/owasp-noir/noir/issues/1101)
+- [Crystal exception handling docs](https://crystal-lang.org/reference/syntax_and_semantics/exception_handling.html)
